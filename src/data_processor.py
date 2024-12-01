@@ -18,19 +18,32 @@ class DataProcessor:
     def _validate_data(self):
         """
         Validate that the DataFrame contains all required columns.
+        Notes or Comments column is accepted for backwards compatibility.
         
         Raises:
         ValueError: If any required columns are missing from the DataFrame.
         """
-        required_columns = [
+        base_required_columns = [
             'Group Names', 'Entity Name', 'Capability Name', 'Template Name',
-            'Assessment Date', 'Assessment Number', 'Rating', 'Notes',
+            'Assessment Date', 'Assessment Number', 'Rating',
             'Criteria', 'Criteria Stage'
         ]
-        missing_columns = [col for col in required_columns if col not in self.data.columns]
+        
+        # Check if either Notes or Comments exists
+        notes_present = 'Notes' in self.data.columns or 'Comments' in self.data.columns
+        if not notes_present:
+            logger.error("Missing both 'Notes' and 'Comments' columns")
+            raise ValueError("Missing both 'Notes' and 'Comments' columns")
+
+        # Check other required columns
+        missing_columns = [col for col in base_required_columns if col not in self.data.columns]
         if missing_columns:
             logger.error(f"Missing required columns: {', '.join(missing_columns)}")
             raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+
+        # Standardize column name to Notes if Comments is present
+        if 'Comments' in self.data.columns and 'Notes' not in self.data.columns:
+            self.data = self.data.rename(columns={'Comments': 'Notes'})
 
     def get_entities(self) -> List[str]:
         """

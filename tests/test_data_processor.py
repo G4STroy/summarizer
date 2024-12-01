@@ -67,5 +67,50 @@ class TestDataProcessor(unittest.TestCase):
         templates = self.processor.get_template_names('Entity1')
         self.assertEqual(templates, ['Template1'])
 
+    def test_validate_data_accepts_comments_instead_of_notes(self):
+        """Test that the validator accepts 'Comments' column instead of 'Notes'"""
+        # Create test data with Comments instead of Notes
+        test_data = pd.DataFrame({
+            'Group Names': ['Group1'],
+            'Entity Name': ['Entity1'],
+            'Capability Name': ['Capability1'],
+            'Template Name': ['Template1'],
+            'Assessment Date': ['2023-01-01'],
+            'Assessment Number': [1],
+            'Rating': [4.0],
+            'Comments': ['Test comment'],  # Using Comments instead of Notes
+            'Criteria': ['Criteria1'],
+            'Criteria Stage': ['Stage1']
+        })
+        
+        # This should not raise an exception
+        processor = DataProcessor(test_data)
+        
+        # Verify the Comments column was renamed to Notes
+        assert 'Notes' in processor.data.columns
+        assert 'Comments' not in processor.data.columns
+        assert processor.data['Notes'].iloc[0] == 'Test comment'
+
+    def test_validate_data_fails_without_notes_or_comments(self):
+        """Test that the validator fails when neither Notes nor Comments is present"""
+        # Create test data without Notes or Comments
+        test_data = pd.DataFrame({
+            'Group Names': ['Group1'],
+            'Entity Name': ['Entity1'],
+            'Capability Name': ['Capability1'],
+            'Template Name': ['Template1'],
+            'Assessment Date': ['2023-01-01'],
+            'Assessment Number': [1],
+            'Rating': [4.0],
+            'Criteria': ['Criteria1'],
+            'Criteria Stage': ['Stage1']
+        })
+        
+        # This should raise a ValueError
+        with self.assertRaises(ValueError) as exc_info:
+            DataProcessor(test_data)
+        
+        assert "Missing both 'Notes' and 'Comments' columns" in str(exc_info.exception)
+
 if __name__ == '__main__':
     unittest.main()
